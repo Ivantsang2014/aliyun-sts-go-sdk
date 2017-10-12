@@ -13,6 +13,7 @@ var (
 	accessKeyId     = os.Getenv("STS_TEST_ACCESS_KEY_ID")
 	accessKeySecret = os.Getenv("STS_TEST_ACCESS_KEY_SECRET")
 	roleArn         = os.Getenv("STS_TEST_ROLE_ARN")
+	policy          = os.Getenv("STS_TEST_POLICY")
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -78,6 +79,24 @@ func (s *StsTestSuite) TestAssumeRole(c *C) {
 	client := NewClient(accessKeyId, accessKeySecret, roleArn, "sts_test")
 
 	resp, err := client.AssumeRole(900)
+	c.Assert(err, IsNil)
+
+	c.Assert(resp.RequestId, Not(Equals), "")
+
+	c.Assert(resp.AssumedRoleUser.Arn, Not(Equals), "")
+	c.Assert(resp.AssumedRoleUser.AssumedRoleId, Not(Equals), "")
+
+	c.Assert(resp.Credentials.AccessKeyId, Not(Equals), "")
+	c.Assert(resp.Credentials.AccessKeySecret, Not(Equals), "")
+	c.Assert(resp.Credentials.SecurityToken, Not(Equals), "")
+	c.Assert(resp.Credentials.Expiration.After(now), Equals, true)
+}
+
+func (s *StsTestSuite) TestAssumeRoleWithPolicy(c *C) {
+	now := time.Now()
+	client := NewClient(accessKeyId, accessKeySecret, roleArn, "sts_test")
+
+	resp, err := client.AssumeRole(900, policy)
 	c.Assert(err, IsNil)
 
 	c.Assert(resp.RequestId, Not(Equals), "")

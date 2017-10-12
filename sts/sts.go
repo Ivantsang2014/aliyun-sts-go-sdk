@@ -90,8 +90,14 @@ const (
 )
 
 // AssumeRole assume role
-func (c *Client) AssumeRole(expiredTime uint) (*Response, error) {
-	url, err := c.generateSignedURL(expiredTime)
+func (c *Client) AssumeRole(expiredTime uint, policy ...string) (*Response, error) {
+	var url string
+	var err error
+	if len(policy) > 0 {
+		url, err = c.generateSignedURL(expiredTime, policy[0])
+	} else {
+		url, err = c.generateSignedURL(expiredTime)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +111,7 @@ func (c *Client) AssumeRole(expiredTime uint) (*Response, error) {
 }
 
 // Private function
-func (c *Client) generateSignedURL(expiredTime uint) (string, error) {
+func (c *Client) generateSignedURL(expiredTime uint, policy ...string) (string, error) {
 	queryStr := "SignatureVersion=" + StsSignVersion
 	queryStr += "&Format=" + RespBodyFormat
 	queryStr += "&Timestamp=" + url.QueryEscape(time.Now().UTC().Format(TimeFormat))
@@ -117,7 +123,9 @@ func (c *Client) generateSignedURL(expiredTime uint) (string, error) {
 	queryStr += "&Action=AssumeRole"
 	queryStr += "&SignatureNonce=" + uuid.NewV4().String()
 	queryStr += "&DurationSeconds=" + strconv.FormatUint((uint64)(expiredTime), 10)
-
+	if len(policy) > 0 {
+		queryStr += "&Policy=" + policy[0]
+	}
 	// Sort query string
 	queryParams, err := url.ParseQuery(queryStr)
 	if err != nil {
